@@ -1,0 +1,84 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    ext.kotlin_version = '{{ cookiecutter.version_kotlin }}'
+}
+
+plugins {
+    id 'java'
+    id 'idea'
+    id 'com.github.johnrengelman.shadow' version '{{ cookiecutter.version_shadow }}'
+    id 'org.jetbrains.kotlin.jvm' version '{{ cookiecutter.version_kotlin }}'
+    {% if cookiecutter.use_jmh  == 'y' %}
+    id 'me.champeau.gradle.jmh' version '{{ cookiecutter.version_gradle_jmh }}' // java -jar target/benchmarks.jar ".*JMHSample_01.*"
+    {% endif %}
+}
+
+group '{{ cookiecutter.group }}'
+version '{{ cookiecutter.version }}'
+
+sourceCompatibility = 1.8
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+dependencies {
+    // Kotlin dependencies
+    compile 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    {% if cookiecutter.use_coroutines  == 'y' %}
+    compile 'org.jetbrains.kotlinx:kotlinx-coroutines-core:0.24.0'
+    {% endif %}
+    // Logging machinery
+    compile 'org.apache.logging.log4j:log4j-core:{{ cookiecutter.version_log4j2 }}'
+    compile 'org.apache.logging.log4j:log4j-api:{{ cookiecutter.version_log4j2 }}'
+    compile 'org.apache.logging.log4j:log4j-slf4j-impl:{{ cookiecutter.version_log4j2 }}'
+    compile 'org.slf4j:slf4j-api:{{ cookiecutter.version_slf4j }}'
+    {% if cookiecutter.use_native_builder  == 'y' %}
+    compile 'com.lmax:disruptor:{{ cookiecutter.version_lmax_disruptor }}' // (async logging)
+    {% endif %}
+
+    testCompile 'junit:junit:{{ cookiecutter.version_junit }}'
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = '1.8'
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = '1.8'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': '{{ cookiecutter.package_name }}.Main'
+    }
+}
+
+{% if cookiecutter.use_coroutines  == 'y' %}
+kotlin {
+    experimental {
+        coroutines 'enable'
+    }
+}
+{% endif %}
+
+{% if cookiecutter.use_native_builder  == 'y' %}
+// $GRAAL_HOME/bin/native-image --report-unsupported-elements-at-runtime -jar {{ cookiecutter.repo_name }}-{{ cookiecutter.version }}-all.jar
+task makeNativeImage(type: Exec, dependsOn: 'shadowJar') {
+    def GRAAL_HOME = System.getenv('GRAAL_HOME')
+    println(GRAAL_HOME)
+    workingDir 'build/libs/'
+    executable "$GRAAL_HOME/bin/native-image"
+    args '-H:ReflectionConfigurationFiles=../../graal-reflection.json',
+            '--report-unsupported-elements-at-runtime',
+            '-jar',
+            '{{ cookiecutter.repo_name }}-{{ cookiecutter.version }}-all.jar'
+}
+
+
+if (false) {
+    shadowJar.finalizedBy(makeNativeImage)
+}
+{% endif %}
