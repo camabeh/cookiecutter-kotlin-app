@@ -13,11 +13,11 @@ object Main {
   fun main(args: Array<String>) {
     logger.info("Hello World from Kotlin")
 
-    {% if cookiecutter.use_coroutines  == 'y' %}
+    {% if cookiecutter.use_coroutines  == 'y' -%}
     runBlocking {
       delay(1000)
       logger.info("Hello from Kotlin Coroutines!")
     }
-    {% endif %}
+    {%- endif %}
   }
 }
