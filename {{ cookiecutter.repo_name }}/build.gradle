@@ -77,7 +77,6 @@ task makeNativeImage(type: Exec, dependsOn: 'shadowJar') {
             '{{ cookiecutter.repo_name }}-{{ cookiecutter.version }}-all.jar'
 }
 
-
 if (false) {
     shadowJar.finalizedBy(makeNativeImage)
 }
